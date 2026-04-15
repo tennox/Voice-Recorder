@@ -15,8 +15,8 @@ in
   # Android SDK — Docs: https://devenv.sh/integrations/android/
   android = {
     enable = true;
-    platforms.version = [ "34" ]; # Android 14; add older versions if minSdk requires it
-    buildTools.version = [ "34.0.0" ];
+    platforms.version = [ "36" ];
+    buildTools.version = [ "36.0.0" ];
     cmdLineTools.version = "11.0";
     # Uncomment for native code (NDK):
     # ndk.version = [ "26.3.11579264" ];
