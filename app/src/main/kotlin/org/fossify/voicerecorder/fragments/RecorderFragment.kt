@@ -79,30 +79,11 @@ class RecorderFragment(
 
     private fun checkBluetoothDevice() {
         Log.d(TAG, "checkBluetoothDevice: called")
-        val hasBluetoothAudioInput = try {
-            bluetoothManager.hasBluetoothAudioInputDevice()
-        } catch (e: SecurityException) {
-            Log.w(TAG, "checkBluetoothDevice: SecurityException checking audio input", e)
-            false
-        } catch (e: Exception) {
-            Log.w(TAG, "checkBluetoothDevice: Exception checking audio input", e)
-            false
-        }
-        
-        val hasBluetoothHeadset = try {
-            bluetoothManager.isBluetoothAvailable() && bluetoothManager.hasBluetoothHeadset()
-        } catch (e: SecurityException) {
-            Log.w(TAG, "checkBluetoothDevice: SecurityException checking bluetooth headset", e)
-            false
-        } catch (e: Exception) {
-            Log.w(TAG, "checkBluetoothDevice: Exception checking bluetooth headset", e)
-            false
-        }
-        
+        val hasAdapter = bluetoothManager.hasBluetoothAdapter()
         val useBluetoothMic = context.config.useBluetoothMic
-        Log.d(TAG, "checkBluetoothDevice: hasBluetoothAudioInput=$hasBluetoothAudioInput, hasBluetoothHeadset=$hasBluetoothHeadset, useBluetoothMic=$useBluetoothMic")
-        
-        if (hasBluetoothAudioInput || hasBluetoothHeadset || useBluetoothMic) {
+        Log.d(TAG, "checkBluetoothDevice: hasAdapter=$hasAdapter, useBluetoothMic=$useBluetoothMic")
+
+        if (hasAdapter || useBluetoothMic) {
             setupInputDeviceTabs()
         } else {
             Log.d(TAG, "checkBluetoothDevice: hiding tabs, no bluetooth detected")

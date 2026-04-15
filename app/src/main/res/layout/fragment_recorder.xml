@@ -6,18 +6,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <com.google.android.material.tabs.TabLayout
-        android:id="@+id/input_device_tabs"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="@dimen/big_margin"
-        android:layout_marginTop="@dimen/small_margin"
-        android:layout_marginEnd="@dimen/big_margin"
-        android:visibility="gone"
-        app:tabGravity="fill"
-        app:tabMode="fixed"
-        app:tabInlineLabel="true" />
-
     <com.visualizer.amplitude.AudioRecordView
         android:id="@+id/recorder_visualizer"
         android:layout_width="match_parent"
@@ -31,8 +19,20 @@
         app:chunkSoftTransition="true"
         app:chunkSpace="1dp"
         app:chunkWidth="3dp"
+        app:layout_constraintBottom_toTopOf="@+id/input_device_tabs"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/input_device_tabs"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/big_margin"
+        android:layout_marginEnd="@dimen/big_margin"
+        android:visibility="gone"
         app:layout_constraintBottom_toTopOf="@+id/recording_duration"
-        app:layout_constraintTop_toBottomOf="@+id/input_device_tabs" />
+        app:tabGravity="fill"
+        app:tabMode="fixed"
+        app:tabInlineLabel="true" />
 
     <org.fossify.commons.views.MyTextView
         android:id="@+id/recording_duration"
