@@ -13,6 +13,7 @@ import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.IBinder
 import android.provider.DocumentsContract
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.FileProvider
 import org.fossify.commons.extensions.createDocumentUriUsingFirstParentTreeUri
@@ -54,6 +55,7 @@ import java.util.TimerTask
 
 class RecorderService : Service() {
     companion object {
+        private const val TAG = "RecorderService"
         var isRunning = false
 
         private const val AMPLITUDE_UPDATE_MS = 75L
@@ -345,13 +347,17 @@ class RecorderService : Service() {
     private fun setBluetoothInputDevice() {
         val bluetoothManager = BluetoothManagerHelper(this)
         val bluetoothDevices = bluetoothManager.getBluetoothAudioInputDevices()
+        Log.d(TAG, "setBluetoothInputDevice: found ${bluetoothDevices.size} bluetooth input devices, useBluetoothMic=${config.useBluetoothMic}")
         if (bluetoothDevices.isNotEmpty()) {
             val device = bluetoothDevices.first()
+            Log.d(TAG, "setBluetoothInputDevice: setting device type=${device.type}, name=${device.productName}")
             if (recorder is MediaRecorderWrapper) {
                 (recorder as MediaRecorderWrapper).setBluetoothInputDevice(device)
             } else if (recorder is Mp3Recorder) {
                 (recorder as Mp3Recorder).setBluetoothInputDevice(device)
             }
+        } else {
+            Log.w(TAG, "setBluetoothInputDevice: no bluetooth input devices found, falling back to default")
         }
     }
 
