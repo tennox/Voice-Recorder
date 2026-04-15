@@ -43,6 +43,7 @@ import org.fossify.voicerecorder.helpers.RECORDING_PAUSED
 import org.fossify.voicerecorder.helpers.RECORDING_RUNNING
 import org.fossify.voicerecorder.helpers.RECORDING_STOPPED
 import org.fossify.voicerecorder.helpers.STOP_AMPLITUDE_UPDATE
+import org.fossify.voicerecorder.helpers.SWITCH_AUDIO_DEVICE
 import org.fossify.voicerecorder.helpers.TOGGLE_PAUSE
 import org.fossify.voicerecorder.models.Events
 import org.fossify.voicerecorder.recorder.MediaRecorderWrapper
@@ -81,6 +82,7 @@ class RecorderService : Service() {
             STOP_AMPLITUDE_UPDATE -> amplitudeTimer.cancel()
             TOGGLE_PAUSE -> togglePause()
             CANCEL_RECORDING -> cancelRecording()
+            SWITCH_AUDIO_DEVICE -> switchAudioDevice()
             else -> startRecording()
         }
 
@@ -380,5 +382,36 @@ class RecorderService : Service() {
     private fun clearBluetoothDevice() {
         val bluetoothManager = BluetoothManagerHelper(this)
         bluetoothManager.clearCommunicationDevice()
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun switchAudioDevice() {
+        if (status != RECORDING_RUNNING && status != RECORDING_PAUSED) {
+            Log.d(TAG, "switchAudioDevice: not recording, ignoring")
+            return
+        }
+
+        val useBluetooth = config.useBluetoothMic
+        Log.d(TAG, "switchAudioDevice: useBluetooth=$useBluetooth")
+
+        val bluetoothManager = BluetoothManagerHelper(this)
+        if (useBluetooth) {
+            val commDevices = bluetoothManager.getAvailableCommunicationDevices()
+            val btCommDevice = commDevices.firstOrNull { device ->
+                device.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO ||
+                device.type == AudioDeviceInfo.TYPE_BLE_HEADSET
+            }
+            if (btCommDevice != null) {
+                bluetoothManager.setCommunicationDevice(btCommDevice)
+            }
+
+            val btInputDevice = bluetoothManager.getBluetoothAudioInputDevices().firstOrNull()
+            recorder?.setPreferredDevice(btInputDevice)
+            Log.d(TAG, "switchAudioDevice: switched to bluetooth (input=${btInputDevice?.productName})")
+        } else {
+            bluetoothManager.clearCommunicationDevice()
+            recorder?.setPreferredDevice(null)
+            Log.d(TAG, "switchAudioDevice: switched to default device")
+        }
     }
 }

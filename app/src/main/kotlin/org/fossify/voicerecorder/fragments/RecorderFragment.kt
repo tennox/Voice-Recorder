@@ -34,6 +34,7 @@ import org.fossify.voicerecorder.helpers.GET_RECORDER_INFO
 import org.fossify.voicerecorder.helpers.RECORDING_PAUSED
 import org.fossify.voicerecorder.helpers.RECORDING_RUNNING
 import org.fossify.voicerecorder.helpers.RECORDING_STOPPED
+import org.fossify.voicerecorder.helpers.SWITCH_AUDIO_DEVICE
 import org.fossify.voicerecorder.helpers.TOGGLE_PAUSE
 import org.fossify.voicerecorder.models.Events
 import org.fossify.voicerecorder.services.RecorderService
@@ -129,6 +130,7 @@ class RecorderFragment(
                             }
                             if (hasBluetooth) {
                                 context.config.useBluetoothMic = true
+                                notifyServiceAudioDeviceChanged()
                             } else {
                                 binding.inputDeviceTabs.getTabAt(INPUT_DEVICE_PHONE)?.select()
                                 context.toast(R.string.bluetooth_permission_required)
@@ -140,12 +142,22 @@ class RecorderFragment(
                     }
                 } else {
                     context.config.useBluetoothMic = false
+                    notifyServiceAudioDeviceChanged()
                 }
             }
 
             override fun onTabUnselected(tab: TabLayout.Tab?) {}
             override fun onTabReselected(tab: TabLayout.Tab?) {}
         })
+    }
+
+    private fun notifyServiceAudioDeviceChanged() {
+        if (RecorderService.isRunning) {
+            Intent(context, RecorderService::class.java).apply {
+                action = SWITCH_AUDIO_DEVICE
+                context.startService(this)
+            }
+        }
     }
 
     override fun onDestroy() {
