@@ -6,6 +6,8 @@ import android.os.Bundle
 import android.provider.MediaStore
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.content.res.AppCompatResources
 import me.grantland.widget.AutofitHelper
 import org.fossify.commons.extensions.appLaunched
@@ -46,6 +48,19 @@ class MainActivity : SimpleActivity() {
     override var isSearchBarEnabled = true
 
     private lateinit var binding: ActivityMainBinding
+
+    private var bluetoothPermissionCallback: ((Boolean) -> Unit)? = null
+    val bluetoothPermissionLauncher: ActivityResultLauncher<Array<String>> =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissionsMap ->
+            val granted = permissionsMap[android.Manifest.permission.BLUETOOTH_CONNECT] == true
+            bluetoothPermissionCallback?.invoke(granted)
+            bluetoothPermissionCallback = null
+        }
+
+    fun launchBluetoothPermissionRequest(callback: (Boolean) -> Unit) {
+        bluetoothPermissionCallback = callback
+        bluetoothPermissionLauncher.launch(arrayOf(android.Manifest.permission.BLUETOOTH_CONNECT))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

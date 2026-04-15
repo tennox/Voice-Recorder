@@ -250,11 +250,12 @@ fun BaseSimpleActivity.ensureBluetoothPermission(callback: (granted: Boolean) ->
 
 fun BaseSimpleActivity.requestBluetoothPermission(callback: (granted: Boolean) -> Unit) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        registerForActivityResult(
-            androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()
-        ) { permissionsMap ->
-            callback(permissionsMap[android.Manifest.permission.BLUETOOTH_CONNECT] == true)
-        }.launch(arrayOf(android.Manifest.permission.BLUETOOTH_CONNECT))
+        val mainActivity = this as? org.fossify.voicerecorder.activities.MainActivity
+        if (mainActivity != null) {
+            mainActivity.launchBluetoothPermissionRequest(callback)
+        } else {
+            callback(false)
+        }
     } else {
         callback(true)
     }
