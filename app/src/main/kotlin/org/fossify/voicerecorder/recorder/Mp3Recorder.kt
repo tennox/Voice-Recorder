@@ -134,6 +134,10 @@ class Mp3Recorder(val context: Context) : Recorder {
         return amplitude.get()
     }
 
+    override fun setPreferredDevice(device: AudioDeviceInfo?) {
+        audioRecord.setPreferredDevice(device)
+    }
+
     override fun setOutputFile(parcelFileDescriptor: ParcelFileDescriptor) {
         this.fileDescriptor = ParcelFileDescriptor.dup(parcelFileDescriptor.fileDescriptor)
     }

@@ -66,4 +66,8 @@ class MediaRecorderWrapper(val context: Context) : Recorder {
     override fun getMaxAmplitude(): Int {
         return recorder.maxAmplitude
     }
+
+    override fun setPreferredDevice(device: AudioDeviceInfo?) {
+        recorder.setPreferredDevice(device)
+    }
 }

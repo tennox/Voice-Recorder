@@ -265,7 +265,9 @@ class MainActivity : SimpleActivity() {
             binding.mainTabsHolder.getTabAt(config.lastUsedViewPagerPage)?.select()
         }
 
-        getPagerAdapter()?.onResume()
+        binding.viewPager.post {
+            getPagerAdapter()?.onResume()
+        }
     }
 
     private fun setupTabColors() {

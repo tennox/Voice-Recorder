@@ -1,5 +1,6 @@
 package org.fossify.voicerecorder.recorder
 
+import android.media.AudioDeviceInfo
 import android.os.ParcelFileDescriptor
 
 interface Recorder {
@@ -12,4 +13,5 @@ interface Recorder {
     fun resume()
     fun release()
     fun getMaxAmplitude(): Int
+    fun setPreferredDevice(device: AudioDeviceInfo?)
 }
