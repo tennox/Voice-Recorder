@@ -346,18 +346,34 @@ class RecorderService : Service() {
     @SuppressLint("MissingPermission")
     private fun setBluetoothInputDevice() {
         val bluetoothManager = BluetoothManagerHelper(this)
+
+        // First, try to route audio via setCommunicationDevice (API 31+)
+        // This is required for BT SCO/HFP devices to become active audio inputs
+        val commDevices = bluetoothManager.getAvailableCommunicationDevices()
+        val btCommDevice = commDevices.firstOrNull { device ->
+            device.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO ||
+            device.type == AudioDeviceInfo.TYPE_BLE_HEADSET
+        }
+        if (btCommDevice != null) {
+            val success = bluetoothManager.setCommunicationDevice(btCommDevice)
+            Log.d(TAG, "setBluetoothInputDevice: setCommunicationDevice result=$success, type=${btCommDevice.type}, name=${btCommDevice.productName}")
+        } else {
+            Log.w(TAG, "setBluetoothInputDevice: no bluetooth communication device available (commDevices=${commDevices.size})")
+        }
+
+        // Also set preferred device on the recorder if a BT input device is visible
         val bluetoothDevices = bluetoothManager.getBluetoothAudioInputDevices()
         Log.d(TAG, "setBluetoothInputDevice: found ${bluetoothDevices.size} bluetooth input devices, useBluetoothMic=${config.useBluetoothMic}")
         if (bluetoothDevices.isNotEmpty()) {
             val device = bluetoothDevices.first()
-            Log.d(TAG, "setBluetoothInputDevice: setting device type=${device.type}, name=${device.productName}")
+            Log.d(TAG, "setBluetoothInputDevice: setPreferredDevice type=${device.type}, name=${device.productName}")
             if (recorder is MediaRecorderWrapper) {
                 (recorder as MediaRecorderWrapper).setBluetoothInputDevice(device)
             } else if (recorder is Mp3Recorder) {
                 (recorder as Mp3Recorder).setBluetoothInputDevice(device)
             }
         } else {
-            Log.w(TAG, "setBluetoothInputDevice: no bluetooth input devices found, falling back to default")
+            Log.w(TAG, "setBluetoothInputDevice: no bluetooth input devices found in audio inputs")
         }
     }
 

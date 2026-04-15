@@ -20,6 +20,12 @@ class BluetoothManagerHelper(private val context: Context) {
         manager?.adapter
     }
 
+    fun hasBluetoothAdapter(): Boolean {
+        val result = bluetoothAdapter != null
+        Log.d(TAG, "hasBluetoothAdapter: $result")
+        return result
+    }
+
     @SuppressLint("MissingPermission")
     fun isBluetoothAvailable(): Boolean {
         val result = bluetoothAdapter?.isEnabled == true
@@ -86,6 +92,15 @@ class BluetoothManagerHelper(private val context: Context) {
         val result = getBluetoothAudioInputDevices().isNotEmpty()
         Log.d(TAG, "hasBluetoothAudioInputDevice: $result")
         return result
+    }
+
+    fun getAvailableCommunicationDevices(): List<AudioDeviceInfo> {
+        val devices = audioManager.availableCommunicationDevices
+        Log.d(TAG, "getAvailableCommunicationDevices: ${devices.size} devices")
+        devices.forEach { device ->
+            Log.d(TAG, "  comm device: type=${device.type} (${audioDeviceTypeToString(device.type)}), productName=${device.productName}")
+        }
+        return devices
     }
 
     fun setCommunicationDevice(device: AudioDeviceInfo): Boolean {
