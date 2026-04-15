@@ -133,11 +133,17 @@ class RecorderFragment(
             override fun onTabSelected(tab: TabLayout.Tab?) {
                 val inputDevice = tab?.tag as? Int ?: INPUT_DEVICE_PHONE
                 if (inputDevice == INPUT_DEVICE_BLUETOOTH) {
-                    ensureBluetoothPermission { granted ->
+                    val activity = context as? BaseSimpleActivity
+                    if (activity == null) {
+                        binding.inputDeviceTabs.getTabAt(INPUT_DEVICE_PHONE)?.select()
+                        return
+                    }
+                    activity.ensureBluetoothPermission { granted ->
                         if (granted) {
                             val hasBluetooth = try {
                                 bluetoothManager.hasBluetoothAudioInputDevice()
                             } catch (e: Exception) {
+                                Log.w(TAG, "Error checking bluetooth audio input", e)
                                 false
                             }
                             if (hasBluetooth) {
