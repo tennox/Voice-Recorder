@@ -2,8 +2,11 @@ package org.fossify.voicerecorder.recorder
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.media.AudioDeviceInfo
 import android.media.AudioFormat
 import android.media.AudioRecord
+import android.media.MediaRecorder
+import android.os.Build
 import android.os.ParcelFileDescriptor
 import com.naman14.androidlame.AndroidLame
 import com.naman14.androidlame.LameBuilder
@@ -27,6 +30,8 @@ class Mp3Recorder(val context: Context) : Recorder {
     private var androidLame: AndroidLame? = null
     private var fileDescriptor: ParcelFileDescriptor? = null
     private var outputStream: FileOutputStream? = null
+    private var bluetoothDevice: AudioDeviceInfo? = null
+
     private val minBufferSize = AudioRecord.getMinBufferSize(
         context.config.samplingRate,
         AudioFormat.CHANNEL_IN_MONO,
@@ -42,11 +47,19 @@ class Mp3Recorder(val context: Context) : Recorder {
         minBufferSize * 2
     )
 
+    fun setBluetoothInputDevice(device: AudioDeviceInfo?) {
+        bluetoothDevice = device
+    }
+
+    override fun prepare() {
+        if (bluetoothDevice != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            audioRecord.setPreferredDevice(bluetoothDevice)
+        }
+    }
+
     override fun setOutputFile(path: String) {
         outputPath = path
     }
-
-    override fun prepare() {}
 
     override fun start() {
         val rawData = ShortArray(minBufferSize)

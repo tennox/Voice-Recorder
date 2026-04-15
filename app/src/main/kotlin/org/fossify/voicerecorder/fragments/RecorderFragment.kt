@@ -7,6 +7,7 @@ import android.graphics.drawable.Drawable
 import android.os.Handler
 import android.os.Looper
 import android.util.AttributeSet
+import com.google.android.material.tabs.TabLayout
 import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.compose.extensions.getActivity
 import org.fossify.commons.dialogs.ConfirmationDialog
@@ -24,8 +25,10 @@ import org.fossify.commons.extensions.toast
 import org.fossify.voicerecorder.R
 import org.fossify.voicerecorder.databinding.FragmentRecorderBinding
 import org.fossify.voicerecorder.extensions.config
+import org.fossify.voicerecorder.extensions.ensureBluetoothPermission
 import org.fossify.voicerecorder.extensions.ensureStoragePermission
 import org.fossify.voicerecorder.extensions.setKeepScreenAwake
+import org.fossify.voicerecorder.helpers.BluetoothManagerHelper
 import org.fossify.voicerecorder.helpers.CANCEL_RECORDING
 import org.fossify.voicerecorder.helpers.GET_RECORDER_INFO
 import org.fossify.voicerecorder.helpers.RECORDING_PAUSED
@@ -49,10 +52,17 @@ class RecorderFragment(
     private var pauseBlinkTimer = Timer()
     private var bus: EventBus? = null
     private lateinit var binding: FragmentRecorderBinding
+    private lateinit var bluetoothManager: BluetoothManagerHelper
+
+    companion object {
+        const val INPUT_DEVICE_PHONE = 0
+        const val INPUT_DEVICE_BLUETOOTH = 1
+    }
 
     override fun onFinishInflate() {
         super.onFinishInflate()
         binding = FragmentRecorderBinding.bind(this)
+        bluetoothManager = BluetoothManagerHelper(context)
     }
 
     override fun onResume() {
@@ -61,7 +71,73 @@ class RecorderFragment(
             status = RECORDING_STOPPED
         }
 
+        checkBluetoothDevice()
         refreshView()
+    }
+
+    private fun checkBluetoothDevice() {
+        val hasBluetoothInput = try {
+            bluetoothManager.hasBluetoothAudioInputDevice()
+        } catch (e: Exception) {
+            false
+        }
+        
+        if (hasBluetoothInput) {
+            setupInputDeviceTabs()
+        } else {
+            binding.inputDeviceTabs.visibility = android.view.View.GONE
+            binding.inputDeviceTabs.removeAllTabs()
+        }
+    }
+
+    private fun setupInputDeviceTabs() {
+        binding.inputDeviceTabs.visibility = android.view.View.VISIBLE
+
+        if (binding.inputDeviceTabs.tabCount == 0) {
+            binding.inputDeviceTabs.addTab(
+                binding.inputDeviceTabs.newTab().setText(R.string.input_device_phone)
+                    .setTag(INPUT_DEVICE_PHONE)
+            )
+            binding.inputDeviceTabs.addTab(
+                binding.inputDeviceTabs.newTab().setText(R.string.input_device_bluetooth)
+                    .setTag(INPUT_DEVICE_BLUETOOTH)
+            )
+        }
+
+        val selectedTab = if (context.config.useBluetoothMic) INPUT_DEVICE_BLUETOOTH else INPUT_DEVICE_PHONE
+        val tab = binding.inputDeviceTabs.getTabAt(selectedTab)
+        tab?.select()
+
+        binding.inputDeviceTabs.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+            override fun onTabSelected(tab: TabLayout.Tab?) {
+                val inputDevice = tab?.tag as? Int ?: INPUT_DEVICE_PHONE
+                if (inputDevice == INPUT_DEVICE_BLUETOOTH) {
+                    ensureBluetoothPermission { granted ->
+                        if (granted) {
+                            val hasBluetooth = try {
+                                bluetoothManager.hasBluetoothAudioInputDevice()
+                            } catch (e: Exception) {
+                                false
+                            }
+                            if (hasBluetooth) {
+                                context.config.useBluetoothMic = true
+                            } else {
+                                binding.inputDeviceTabs.getTabAt(INPUT_DEVICE_PHONE)?.select()
+                                context.toast(R.string.bluetooth_permission_required)
+                            }
+                        } else {
+                            binding.inputDeviceTabs.getTabAt(INPUT_DEVICE_PHONE)?.select()
+                            context.toast(R.string.bluetooth_permission_required)
+                        }
+                    }
+                } else {
+                    context.config.useBluetoothMic = false
+                }
+            }
+
+            override fun onTabUnselected(tab: TabLayout.Tab?) {}
+            override fun onTabReselected(tab: TabLayout.Tab?) {}
+        })
     }
 
     override fun onDestroy() {

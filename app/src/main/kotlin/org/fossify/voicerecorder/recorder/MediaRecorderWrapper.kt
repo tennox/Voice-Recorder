@@ -2,11 +2,15 @@ package org.fossify.voicerecorder.recorder
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.media.AudioDeviceInfo
 import android.media.MediaRecorder
+import android.os.Build
 import android.os.ParcelFileDescriptor
 import org.fossify.voicerecorder.extensions.config
 
 class MediaRecorderWrapper(val context: Context) : Recorder {
+
+    private var bluetoothDevice: AudioDeviceInfo? = null
 
     @Suppress("DEPRECATION")
     private var recorder = MediaRecorder().apply {
@@ -17,6 +21,17 @@ class MediaRecorderWrapper(val context: Context) : Recorder {
         setAudioSamplingRate(context.config.samplingRate)
     }
 
+    fun setBluetoothInputDevice(device: AudioDeviceInfo?) {
+        bluetoothDevice = device
+    }
+
+    override fun prepare() {
+        if (bluetoothDevice != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            recorder.setPreferredDevice(bluetoothDevice)
+        }
+        recorder.prepare()
+    }
+
     override fun setOutputFile(path: String) {
         recorder.setOutputFile(path)
     }
@@ -24,10 +39,6 @@ class MediaRecorderWrapper(val context: Context) : Recorder {
     override fun setOutputFile(parcelFileDescriptor: ParcelFileDescriptor) {
         val pFD = ParcelFileDescriptor.dup(parcelFileDescriptor.fileDescriptor)
         recorder.setOutputFile(pFD.fileDescriptor)
-    }
-
-    override fun prepare() {
-        recorder.prepare()
     }
 
     override fun start() {
