@@ -40,6 +40,7 @@ import org.fossify.voicerecorder.services.RecorderService
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
+import android.util.Log
 import java.util.Timer
 import java.util.TimerTask
 
@@ -55,6 +56,7 @@ class RecorderFragment(
     private lateinit var bluetoothManager: BluetoothManagerHelper
 
     companion object {
+        private const val TAG = "RecorderFragment"
         const val INPUT_DEVICE_PHONE = 0
         const val INPUT_DEVICE_BLUETOOTH = 1
     }
@@ -76,15 +78,34 @@ class RecorderFragment(
     }
 
     private fun checkBluetoothDevice() {
-        val hasBluetoothInput = try {
+        Log.d(TAG, "checkBluetoothDevice: called")
+        val hasBluetoothAudioInput = try {
             bluetoothManager.hasBluetoothAudioInputDevice()
+        } catch (e: SecurityException) {
+            Log.w(TAG, "checkBluetoothDevice: SecurityException checking audio input", e)
+            false
         } catch (e: Exception) {
+            Log.w(TAG, "checkBluetoothDevice: Exception checking audio input", e)
             false
         }
         
-        if (hasBluetoothInput) {
+        val hasBluetoothHeadset = try {
+            bluetoothManager.isBluetoothAvailable() && bluetoothManager.hasBluetoothHeadset()
+        } catch (e: SecurityException) {
+            Log.w(TAG, "checkBluetoothDevice: SecurityException checking bluetooth headset", e)
+            false
+        } catch (e: Exception) {
+            Log.w(TAG, "checkBluetoothDevice: Exception checking bluetooth headset", e)
+            false
+        }
+        
+        val useBluetoothMic = context.config.useBluetoothMic
+        Log.d(TAG, "checkBluetoothDevice: hasBluetoothAudioInput=$hasBluetoothAudioInput, hasBluetoothHeadset=$hasBluetoothHeadset, useBluetoothMic=$useBluetoothMic")
+        
+        if (hasBluetoothAudioInput || hasBluetoothHeadset || useBluetoothMic) {
             setupInputDeviceTabs()
         } else {
+            Log.d(TAG, "checkBluetoothDevice: hiding tabs, no bluetooth detected")
             binding.inputDeviceTabs.visibility = android.view.View.GONE
             binding.inputDeviceTabs.removeAllTabs()
         }
