@@ -1,8 +1,10 @@
 package org.fossify.voicerecorder.extensions
 
 import android.app.Activity
+import android.content.pm.PackageManager
 import android.provider.DocumentsContract
 import android.view.WindowManager
+import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.dialogs.FilePickerDialog
@@ -221,5 +223,36 @@ fun BaseSimpleActivity.deleteExpiredTrashedRecordings() {
                 e.printStackTrace()
             }
         }
+    }
+}
+
+fun BaseSimpleActivity.hasBluetoothPermission(): Boolean {
+    return if (isSPlus()) {
+        ContextCompat.checkSelfPermission(
+            this,
+            android.Manifest.permission.BLUETOOTH_CONNECT
+        ) == PackageManager.PERMISSION_GRANTED
+    } else {
+        true
+    }
+}
+
+fun BaseSimpleActivity.ensureBluetoothPermission(callback: (granted: Boolean) -> Unit) {
+    if (hasBluetoothPermission()) {
+        callback(true)
+    } else {
+        requestBluetoothPermission {
+            callback(it)
+        }
+    }
+}
+
+fun BaseSimpleActivity.requestBluetoothPermission(callback: (granted: Boolean) -> Unit) {
+    if (isSPlus()) {
+        askForPermission(android.Manifest.permission.BLUETOOTH_CONNECT) { granted ->
+            callback(granted)
+        }
+    } else {
+        callback(true)
     }
 }

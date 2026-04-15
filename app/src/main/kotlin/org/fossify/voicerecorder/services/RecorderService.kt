@@ -6,7 +6,9 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.Context
 import android.content.Intent
+import android.media.AudioDeviceInfo
 import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.IBinder
@@ -31,6 +33,7 @@ import org.fossify.voicerecorder.activities.SplashActivity
 import org.fossify.voicerecorder.extensions.config
 import org.fossify.voicerecorder.extensions.getFormattedFilename
 import org.fossify.voicerecorder.extensions.updateWidgets
+import org.fossify.voicerecorder.helpers.BluetoothManagerHelper
 import org.fossify.voicerecorder.helpers.CANCEL_RECORDING
 import org.fossify.voicerecorder.helpers.EXTENSION_MP3
 import org.fossify.voicerecorder.helpers.GET_RECORDER_INFO
@@ -114,6 +117,10 @@ class RecorderService : Service() {
                 MediaRecorderWrapper(this)
             }
 
+            if (config.useBluetoothMic) {
+                setBluetoothInputDevice()
+            }
+
             if (isRPlus()) {
                 val fileUri = createDocumentUriUsingFirstParentTreeUri(recordingPath)
                 createSAFFileSdk30(recordingPath)
@@ -155,6 +162,10 @@ class RecorderService : Service() {
         durationTimer.cancel()
         amplitudeTimer.cancel()
         status = RECORDING_STOPPED
+
+        if (config.useBluetoothMic) {
+            clearBluetoothDevice()
+        }
 
         recorder?.apply {
             try {
@@ -328,5 +339,24 @@ class RecorderService : Service() {
 
     private fun recordMp3(): Boolean {
         return config.extension == EXTENSION_MP3
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun setBluetoothInputDevice() {
+        val bluetoothManager = BluetoothManagerHelper(this)
+        val bluetoothDevices = bluetoothManager.getBluetoothAudioInputDevices()
+        if (bluetoothDevices.isNotEmpty()) {
+            val device = bluetoothDevices.first()
+            if (recorder is MediaRecorderWrapper) {
+                (recorder as MediaRecorderWrapper).setBluetoothInputDevice(device)
+            } else if (recorder is Mp3Recorder) {
+                (recorder as Mp3Recorder).setBluetoothInputDevice(device)
+            }
+        }
+    }
+
+    private fun clearBluetoothDevice() {
+        val bluetoothManager = BluetoothManagerHelper(this)
+        bluetoothManager.clearCommunicationDevice()
     }
 }

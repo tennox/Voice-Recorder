@@ -100,4 +100,8 @@ class Config(context: Context) : BaseConfig(context) {
     var filenamePattern: String
         get() = prefs.getString(FILENAME_PATTERN, DEFAULT_FILENAME_PATTERN)!!
         set(filenamePattern) = prefs.edit { putString(FILENAME_PATTERN, filenamePattern) }
+
+    var useBluetoothMic: Boolean
+        get() = prefs.getBoolean(USE_BLUETOOTH_MIC, false)
+        set(useBluetoothMic) = prefs.edit { putBoolean(USE_BLUETOOTH_MIC, useBluetoothMic) }
 }
