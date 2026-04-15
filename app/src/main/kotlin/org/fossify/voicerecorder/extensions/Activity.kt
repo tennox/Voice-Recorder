@@ -2,6 +2,7 @@ package org.fossify.voicerecorder.extensions
 
 import android.app.Activity
 import android.content.pm.PackageManager
+import android.os.Build
 import android.provider.DocumentsContract
 import android.view.WindowManager
 import androidx.core.content.ContextCompat
@@ -227,7 +228,7 @@ fun BaseSimpleActivity.deleteExpiredTrashedRecordings() {
 }
 
 fun BaseSimpleActivity.hasBluetoothPermission(): Boolean {
-    return if (isSPlus()) {
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         ContextCompat.checkSelfPermission(
             this,
             android.Manifest.permission.BLUETOOTH_CONNECT
@@ -248,10 +249,12 @@ fun BaseSimpleActivity.ensureBluetoothPermission(callback: (granted: Boolean) ->
 }
 
 fun BaseSimpleActivity.requestBluetoothPermission(callback: (granted: Boolean) -> Unit) {
-    if (isSPlus()) {
-        askForPermission(android.Manifest.permission.BLUETOOTH_CONNECT) { granted ->
-            callback(granted)
-        }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        registerForActivityResult(
+            androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()
+        ) { permissionsMap ->
+            callback(permissionsMap[android.Manifest.permission.BLUETOOTH_CONNECT] == true)
+        }.launch(arrayOf(android.Manifest.permission.BLUETOOTH_CONNECT))
     } else {
         callback(true)
     }

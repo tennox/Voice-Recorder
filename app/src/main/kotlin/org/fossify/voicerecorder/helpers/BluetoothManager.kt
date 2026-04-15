@@ -6,13 +6,10 @@ import android.bluetooth.BluetoothDevice
 import android.content.Context
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
+import android.os.Build
 import android.util.Log
 
 class BluetoothManagerHelper(private val context: Context) {
-
-    companion object {
-        private const val TAG = "BluetoothManager"
-    }
 
     private val audioManager: AudioManager by lazy {
         context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
@@ -62,24 +59,6 @@ class BluetoothManagerHelper(private val context: Context) {
         }
     }
 
-    @SuppressLint("MissingPermission")
-    fun getConnectedBluetoothDevices(): List<BluetoothDevice> {
-        val adapter = bluetoothAdapter ?: return emptyList()
-        if (!adapter.isEnabled) return emptyList()
-
-        return try {
-            adapter.bondedDevices.filter { device ->
-                try {
-                    device.connectionState == BluetoothDevice.CONNECTION_STATE_CONNECTED
-                } catch (e: Exception) {
-                    false
-                }
-            }
-        } catch (e: Exception) {
-            emptyList()
-        }
-    }
-
     fun getAvailableAudioInputDevices(): List<AudioDeviceInfo> {
         val devices = audioManager.getDevices(AudioManager.GET_DEVICES_INPUTS)
         Log.d(TAG, "getAvailableAudioInputDevices: ${devices.size} total input devices")
@@ -94,7 +73,7 @@ class BluetoothManagerHelper(private val context: Context) {
         val btDevices = allDevices.filter { device ->
             device.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO ||
             device.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP ||
-            device.type == AudioDeviceInfo.TYPE_BLUETOOTH_LE_AUDIO
+            device.type == 26 /* TYPE_BLE_HEADSET on API 31+ */
         }
         Log.d(TAG, "getBluetoothAudioInputDevices: ${btDevices.size} bluetooth input devices found")
         btDevices.forEach { device ->
@@ -126,7 +105,6 @@ class BluetoothManagerHelper(private val context: Context) {
 
     private fun audioDeviceTypeToString(type: Int): String = when (type) {
         AudioDeviceInfo.TYPE_BUILTIN_MIC -> "BUILTIN_MIC"
-        AudioDeviceInfo.TYPE_BUILTIN_BACK_MIC -> "BUILTIN_BACK_MIC"
         AudioDeviceInfo.TYPE_BLUETOOTH_SCO -> "BLUETOOTH_SCO"
         AudioDeviceInfo.TYPE_BLUETOOTH_A2DP -> "BLUETOOTH_A2DP"
         AudioDeviceInfo.TYPE_WIRED_HEADSET -> "WIRED_HEADSET"
@@ -141,13 +119,11 @@ class BluetoothManagerHelper(private val context: Context) {
         AudioDeviceInfo.TYPE_HDMI -> "HDMI"
         AudioDeviceInfo.TYPE_HDMI_ARC -> "HDMI_ARC"
         AudioDeviceInfo.TYPE_BLE_SPEAKER -> "BLE_SPEAKER"
-        AudioDeviceInfo.TYPE_ECHO_REFERENCE -> "ECHO_REFERENCE"
-        AudioDeviceInfo.TYPE_BLE_BROADCAST -> "BLE_BROADCAST"
-        AudioDeviceInfo.TYPE_BLUETOOTH_LE_AUDIO -> "BLUETOOTH_LE_AUDIO"
         else -> "UNKNOWN($type)"
     }
 
     companion object {
+        private const val TAG = "BluetoothManager"
         fun needsBluetoothConnectPermission(): Boolean {
             return android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S
         }
