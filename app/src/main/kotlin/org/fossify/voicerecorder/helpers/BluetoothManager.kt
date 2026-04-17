@@ -65,6 +65,28 @@ class BluetoothManagerHelper(private val context: Context) {
         }
     }
 
+    /**
+     * Returns the number of channels supported by the given input device,
+     * or by the default input device if none specified.
+     * Returns 2 for stereo-capable devices, 1 otherwise.
+     */
+    fun getInputChannelCount(preferredDevice: AudioDeviceInfo? = null): Int {
+        val device = preferredDevice ?: getDefaultInputDevice()
+        if (device != null) {
+            val channelCounts = device.channelCounts
+            // Empty array means device supports arbitrary channel counts (including stereo)
+            if (channelCounts.isEmpty() || channelCounts.any { it >= 2 }) {
+                return 2
+            }
+        }
+        return 1
+    }
+
+    private fun getDefaultInputDevice(): AudioDeviceInfo? {
+        return audioManager.getDevices(AudioManager.GET_DEVICES_INPUTS)
+            .firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_MIC }
+    }
+
     fun getAvailableAudioInputDevices(): List<AudioDeviceInfo> {
         val devices = audioManager.getDevices(AudioManager.GET_DEVICES_INPUTS)
         Log.d(TAG, "getAvailableAudioInputDevices: ${devices.size} total input devices")

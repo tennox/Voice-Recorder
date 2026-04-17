@@ -8,7 +8,7 @@ import android.os.Build
 import android.os.ParcelFileDescriptor
 import org.fossify.voicerecorder.extensions.config
 
-class MediaRecorderWrapper(val context: Context) : Recorder {
+class MediaRecorderWrapper(val context: Context, private val channelCount: Int = 1) : Recorder {
 
     private var bluetoothDevice: AudioDeviceInfo? = null
 
@@ -19,6 +19,7 @@ class MediaRecorderWrapper(val context: Context) : Recorder {
         setAudioEncoder(context.config.getAudioEncoder())
         setAudioEncodingBitRate(context.config.bitrate)
         setAudioSamplingRate(context.config.samplingRate)
+        setAudioChannels(channelCount)
     }
 
     fun setBluetoothInputDevice(device: AudioDeviceInfo?) {

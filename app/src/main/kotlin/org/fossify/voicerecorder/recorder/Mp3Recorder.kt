@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.abs
 
-class Mp3Recorder(val context: Context) : Recorder {
+class Mp3Recorder(val context: Context, private val channelCount: Int = 1) : Recorder {
     private var mp3buffer: ByteArray = ByteArray(0)
     private var isPaused = AtomicBoolean(false)
     private var isStopped = AtomicBoolean(false)
@@ -32,9 +32,12 @@ class Mp3Recorder(val context: Context) : Recorder {
     private var outputStream: FileOutputStream? = null
     private var bluetoothDevice: AudioDeviceInfo? = null
 
+    private val isStereo = channelCount >= 2
+    private val channelConfig = if (isStereo) AudioFormat.CHANNEL_IN_STEREO else AudioFormat.CHANNEL_IN_MONO
+
     private val minBufferSize = AudioRecord.getMinBufferSize(
         context.config.samplingRate,
-        AudioFormat.CHANNEL_IN_MONO,
+        channelConfig,
         AudioFormat.ENCODING_PCM_16BIT
     )
 
@@ -42,7 +45,7 @@ class Mp3Recorder(val context: Context) : Recorder {
     private val audioRecord = AudioRecord(
         context.config.microphoneMode,
         context.config.samplingRate,
-        AudioFormat.CHANNEL_IN_MONO,
+        channelConfig,
         AudioFormat.ENCODING_PCM_16BIT,
         minBufferSize * 2
     )
@@ -76,11 +79,12 @@ class Mp3Recorder(val context: Context) : Recorder {
             return
         }
 
+        val outChannels = if (isStereo) 2 else 1
         androidLame = LameBuilder()
             .setInSampleRate(context.config.samplingRate)
             .setOutBitrate(context.config.bitrate / 1000)
             .setOutSampleRate(context.config.samplingRate)
-            .setOutChannels(1)
+            .setOutChannels(outChannels)
             .build()
 
         ensureBackgroundThread {
@@ -91,11 +95,25 @@ class Mp3Recorder(val context: Context) : Recorder {
                 return@ensureBackgroundThread
             }
 
+            // Pre-allocate deinterleave buffers for stereo
+            val leftBuffer = if (isStereo) ShortArray(minBufferSize / 2) else null
+            val rightBuffer = if (isStereo) ShortArray(minBufferSize / 2) else null
+
             while (!isStopped.get()) {
                 if (!isPaused.get()) {
                     val count = audioRecord.read(rawData, 0, minBufferSize)
                     if (count > 0) {
-                        val encoded = androidLame!!.encode(rawData, rawData, count, mp3buffer)
+                        val encoded = if (isStereo) {
+                            // Deinterleave stereo samples: L,R,L,R,... -> separate L and R buffers
+                            val samplesPerChannel = count / 2
+                            for (i in 0 until samplesPerChannel) {
+                                leftBuffer!![i] = rawData[i * 2]
+                                rightBuffer!![i] = rawData[i * 2 + 1]
+                            }
+                            androidLame!!.encode(leftBuffer!!, rightBuffer!!, samplesPerChannel, mp3buffer)
+                        } else {
+                            androidLame!!.encode(rawData, rawData, count, mp3buffer)
+                        }
                         if (encoded > 0) {
                             try {
                                 updateAmplitude(rawData)

@@ -115,10 +115,21 @@ class RecorderService : Service() {
         resultUri = null
 
         try {
-            recorder = if (recordMp3()) {
-                Mp3Recorder(this)
+            val bluetoothManager = BluetoothManagerHelper(this)
+
+            // Detect channel count from the input device that will be used
+            val inputDevice = if (config.useBluetoothMic) {
+                bluetoothManager.getBluetoothAudioInputDevices().firstOrNull()
             } else {
-                MediaRecorderWrapper(this)
+                null
+            }
+            val channelCount = bluetoothManager.getInputChannelCount(inputDevice)
+            Log.d(TAG, "startRecording: detected channelCount=$channelCount for input device=${inputDevice?.productName ?: "default"}")
+
+            recorder = if (recordMp3()) {
+                Mp3Recorder(this, channelCount)
+            } else {
+                MediaRecorderWrapper(this, channelCount)
             }
 
             if (config.useBluetoothMic) {
